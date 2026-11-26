@@ -1,10 +1,11 @@
 [project]
-name = "blank-app-template"
+name = "lead-capture-agent"
 version = "0.1.0"
 description = "A simple Streamlit app template."
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "google-adk>=2.15.1",
     "streamlit>=1.61.1",
 ]
 
