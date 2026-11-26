@@ -11,34 +11,34 @@ from google.genai import types
 
 from lead_capture_agent.agent import REQUIRED_LEAD_FIELDS, root_agent
 
-# Carga variables de entorno desde .env en la raíz o dentro de lead_capture_agent/
+# Load environment variables from .env at the project root or inside lead_capture_agent/
 load_dotenv(Path(__file__).parent / ".env")
 load_dotenv(Path(__file__).parent / "lead_capture_agent" / ".env")
 
 APP_NAME = "lead_capture_app"
 
 FIELD_LABELS = {
-    "full_name": "Nombre completo",
-    "birth_date": "Día de nacimiento",
-    "email": "Correo electrónico",
-    "contact_reason": "Razón de contacto",
+    "full_name": "Full Name",
+    "birth_date": "Date of Birth",
+    "email": "Email Address",
+    "contact_reason": "Reason for Contact",
 }
 
 WELCOME_MESSAGE = (
-    "¡Hola! Para poder ayudarte y dar seguimiento a tu solicitud, "
-    "necesito capturar algunos datos: tu **nombre completo**, **día de nacimiento**, "
-    "**correo electrónico** y una **razón breve de contacto**. "
-    "¿Con qué datos te gustaría comenzar?"
+    "Hello! To help you and follow up on your request, "
+    "I need to collect a few details: your **full name**, **date of birth**, "
+    "**email address**, and a **brief reason for contact**. "
+    "Which details would you like to start with?"
 )
 
 
 @st.cache_resource
 def _get_event_loop() -> asyncio.AbstractEventLoop:
-    """Mantiene un único event loop persistente en un hilo en segundo plano.
+    """Maintains a single persistent event loop on a background thread.
 
-    Evita que `asyncio.run()` cierre el loop al final de cada turno mientras el
-    cliente HTTP asíncrono de `google-genai` / `httpx` aún tiene conexiones
-    asociadas a ese loop.
+    Prevents `asyncio.run()` from closing the loop at the end of each turn while
+    the async HTTP client in `google-genai` / `httpx` still holds connections
+    bound to that loop.
     """
     loop = asyncio.new_event_loop()
     thread = threading.Thread(target=loop.run_forever, daemon=True)
@@ -47,7 +47,7 @@ def _get_event_loop() -> asyncio.AbstractEventLoop:
 
 
 def _run_async(coro):
-    """Ejecuta una corrutina en el event loop persistente desde Streamlit."""
+    """Runs a coroutine on the persistent event loop from Streamlit."""
     loop = _get_event_loop()
     future = asyncio.run_coroutine_threadsafe(coro, loop)
     return future.result()
@@ -105,7 +105,7 @@ async def _send_to_agent(
 
     reply = "\n".join(final_chunks).strip() or "\n".join(fallback_chunks).strip()
     if not reply:
-        reply = "Lo siento, no recibí una respuesta del agente. ¿Podrías intentar de nuevo?"
+        reply = "Sorry, I didn't receive a response from the agent. Could you please try again?"
 
     session = await session_service.get_session(
         app_name=APP_NAME,
@@ -146,29 +146,29 @@ def _init_state() -> None:
 
 def main() -> None:
     st.set_page_config(
-        page_title="Agente de Captura de Leads",
+        page_title="Lead Capture Agent",
         page_icon="📋",
         layout="wide",
     )
 
     _init_state()
 
-    st.title("📋 Agente de Captura de Leads")
+    st.title("📋 Lead Capture Agent")
     st.caption(
-        "Conversa con el asistente para registrar nombre completo, día de nacimiento, "
-        "correo electrónico y razón breve de contacto."
+        "Chat with the assistant to record full name, date of birth, "
+        "email address, and a brief reason for contact."
     )
 
     with st.sidebar:
-        st.subheader("Opciones")
-        if st.button("➕ Capturar nuevo lead", width="stretch"):
+        st.subheader("Options")
+        if st.button("➕ Capture new lead", width="stretch"):
             _start_new_conversation()
             st.rerun()
 
         st.divider()
         current_lead: dict = st.session_state.current_lead
         captured_count = sum(1 for f in REQUIRED_LEAD_FIELDS if current_lead.get(f))
-        st.markdown(f"**Progreso actual:** {captured_count} / {len(REQUIRED_LEAD_FIELDS)}")
+        st.markdown(f"**Current progress:** {captured_count} / {len(REQUIRED_LEAD_FIELDS)}")
         st.progress(captured_count / len(REQUIRED_LEAD_FIELDS))
         for field in REQUIRED_LEAD_FIELDS:
             icon = "✅" if current_lead.get(field) else "⬜"
@@ -185,7 +185,7 @@ def main() -> None:
                     st.markdown(msg["content"])
 
     with col_table:
-        st.subheader("📊 Datos del Lead Capturado")
+        st.subheader("📊 Captured Lead Data")
         captured_rows = [
             {
                 FIELD_LABELS[field]: lead.get(field, "")
@@ -195,7 +195,7 @@ def main() -> None:
         ]
 
         if captured_rows:
-            st.success(f"Leads capturados: {len(captured_rows)}")
+            st.success(f"Captured leads: {len(captured_rows)}")
             st.dataframe(
                 captured_rows,
                 width="stretch",
@@ -203,11 +203,11 @@ def main() -> None:
             )
         else:
             st.info(
-                "Aún no hay un lead completo. Los datos aparecerán en esta tabla "
-                "una vez que se hayan capturado los 4 campos requeridos."
+                "No complete lead yet. The data will appear in this table "
+                "once all 4 required fields have been captured."
             )
 
-    if prompt := st.chat_input("Escribe tu mensaje aquí..."):
+    if prompt := st.chat_input("Type your message here..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with col_chat:
@@ -215,7 +215,7 @@ def main() -> None:
                 with st.chat_message("user"):
                     st.markdown(prompt)
                 with st.chat_message("assistant"):
-                    with st.spinner("Procesando..."):
+                    with st.spinner("Processing..."):
                         try:
                             reply, lead_info = _run_async(
                                 _send_to_agent(
@@ -228,8 +228,8 @@ def main() -> None:
                             )
                         except Exception as exc:
                             reply = (
-                                "Ocurrió un error al comunicarme con el agente. "
-                                f"Verifica tu configuración de API (`GOOGLE_API_KEY`).\n\n`{exc}`"
+                                "An error occurred while communicating with the agent. "
+                                f"Please check your API configuration (`GOOGLE_API_KEY`).\n\n`{exc}`"
                             )
                             lead_info = st.session_state.current_lead
 

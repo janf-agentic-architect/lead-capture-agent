@@ -21,21 +21,21 @@ def save_lead_info(
     email: Optional[str] = None,
     contact_reason: Optional[str] = None,
 ) -> dict:
-    """Guarda o actualiza los datos de contacto del prospecto en el estado del usuario.
+    """Saves or updates the prospect's contact details in the user state.
 
-    Llama a esta herramienta cada vez que el usuario proporcione o corrija uno o más
-    de los datos requeridos. Solo envía los campos que el usuario haya mencionado.
+    Call this tool whenever the user provides or corrects one or more of the
+    required details. Only pass the fields that the user has mentioned.
 
     Args:
-        tool_context: Proporcionado automáticamente por ADK.
-        full_name: Nombre completo del usuario.
-        birth_date: Fecha o día de nacimiento del usuario (por ejemplo, "15/03/1990" o "1990-03-15").
-        email: Correo electrónico del usuario.
-        contact_reason: Razón breve por la cual el usuario desea ser contactado.
+        tool_context: Automatically provided by ADK.
+        full_name: The user's full name.
+        birth_date: The user's date of birth (e.g., "03/15/1990" or "1990-03-15").
+        email: The user's email address.
+        contact_reason: A brief reason why the user wants to be contacted.
 
     Returns:
-        Un diccionario con el estado de captura ("complete" o "incomplete"), los datos
-        guardados, los campos faltantes y posibles errores de validación.
+        A dictionary with the capture status ("complete" or "incomplete"),
+        saved data, missing fields, and any validation errors.
     """
     existing = tool_context.state.get("user:lead_info", {})
     lead = dict(existing) if isinstance(existing, dict) else {}
@@ -46,14 +46,14 @@ def save_lead_info(
         if cleaned:
             lead["full_name"] = cleaned
         else:
-            validation_errors["full_name"] = "El nombre completo no puede estar vacío."
+            validation_errors["full_name"] = "Full name cannot be empty."
 
     if birth_date is not None:
         cleaned = birth_date.strip()
         if cleaned:
             lead["birth_date"] = cleaned
         else:
-            validation_errors["birth_date"] = "La fecha de nacimiento no puede estar vacía."
+            validation_errors["birth_date"] = "Date of birth cannot be empty."
 
     if email is not None:
         cleaned = email.strip().lower()
@@ -61,7 +61,7 @@ def save_lead_info(
             lead["email"] = cleaned
         else:
             validation_errors["email"] = (
-                "El correo electrónico no tiene un formato válido (ejemplo: nombre@dominio.com)."
+                "Email address is not in a valid format (example: name@domain.com)."
             )
 
     if contact_reason is not None:
@@ -69,7 +69,7 @@ def save_lead_info(
         if cleaned:
             lead["contact_reason"] = cleaned
         else:
-            validation_errors["contact_reason"] = "La razón de contacto no puede estar vacía."
+            validation_errors["contact_reason"] = "Contact reason cannot be empty."
 
     tool_context.state["user:lead_info"] = lead
     missing_fields = [field for field in REQUIRED_LEAD_FIELDS if not lead.get(field)]
@@ -83,13 +83,13 @@ def save_lead_info(
 
 
 def get_lead_info(tool_context: ToolContext) -> dict:
-    """Obtiene los datos del prospecto capturados hasta el momento y los campos faltantes.
+    """Retrieves the prospect details captured so far and the missing fields.
 
     Args:
-        tool_context: Proporcionado automáticamente por ADK.
+        tool_context: Automatically provided by ADK.
 
     Returns:
-        Un diccionario con el estado actual de captura, los datos guardados y los campos faltantes.
+        A dictionary with the current capture status, saved data, and missing fields.
     """
     existing = tool_context.state.get("user:lead_info", {})
     lead = dict(existing) if isinstance(existing, dict) else {}
@@ -106,26 +106,26 @@ root_agent = Agent(
     model="gemini-3.5-flash-lite",
     name="root_agent",
     description=(
-        "Agente de captura de prospectos que recopila nombre completo, fecha de nacimiento, "
-        "correo electrónico y razón breve de contacto."
+        "Lead capture agent that collects full name, date of birth, "
+        "email address, and a brief reason for contact."
     ),
     instruction=(
-        "Eres un asistente amable y profesional encargado de capturar datos de contacto.\n\n"
-        "Tu objetivo es recopilar los siguientes 4 datos obligatorios del usuario:\n"
-        "1. Nombre completo (`full_name`)\n"
-        "2. Día / fecha de nacimiento (`birth_date`)\n"
-        "3. Correo electrónico (`email`)\n"
-        "4. Razón breve de contacto (`contact_reason`)\n\n"
-        "Reglas de comportamiento:\n"
-        "- Responde en español (o en el idioma que use el usuario) de forma cordial, clara y concisa.\n"
-        "- Cada vez que el usuario proporcione o corrija cualquiera de estos datos, llama inmediatamente "
-        "a la herramienta `save_lead_info` con los campos recibidos.\n"
-        "- Si `save_lead_info` devuelve errores en `validation_errors`, pide amablemente al usuario que "
-        "corrija ese dato.\n"
-        "- Revisa `missing_fields` y solicita únicamente los datos que aún falten, sin volver a pedir "
-        "los que ya fueron guardados.\n"
-        "- Cuando `status` sea `complete`, muestra un resumen claro con los 4 datos capturados, "
-        "agradece al usuario y pregúntale si desea corregir algún dato."
+        "You are a friendly and professional assistant responsible for capturing contact details.\n\n"
+        "Your goal is to collect the following 4 required details from the user:\n"
+        "1. Full name (`full_name`)\n"
+        "2. Date of birth (`birth_date`)\n"
+        "3. Email address (`email`)\n"
+        "4. Brief reason for contact (`contact_reason`)\n\n"
+        "Behavior rules:\n"
+        "- Respond in English (or in the language the user uses) in a polite, clear, and concise manner.\n"
+        "- Whenever the user provides or corrects any of these details, immediately call "
+        "the `save_lead_info` tool with the received fields.\n"
+        "- If `save_lead_info` returns errors in `validation_errors`, politely ask the user "
+        "to correct that field.\n"
+        "- Check `missing_fields` and ask only for the details that are still missing, without "
+        "asking again for those already saved.\n"
+        "- When `status` is `complete`, display a clear summary of all 4 captured details, "
+        "thank the user, and ask if they would like to correct any information."
     ),
     tools=[save_lead_info, get_lead_info],
 )
